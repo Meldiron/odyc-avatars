@@ -7,10 +7,14 @@ import Logo from './components/Logo.jsx';
 const PAGE = 24;
 const APPLIED_KEY = 'odyc.appliedSeed';
 
-// Deterministic models for a contiguous range of seeds.
+// New seed prefix every page load (current time) so each reload yields a fresh
+// infinite list. Seeds are still deterministic strings, so an applied avatar
+// stored in localStorage reproduces exactly regardless of the session.
+const SESSION = Date.now().toString(36);
+
 function buildModels(from, count) {
   const out = [];
-  for (let i = from; i < from + count; i++) out.push(generate(`odyc-${i}`));
+  for (let i = from; i < from + count; i++) out.push(generate(`${SESSION}-${i}`));
   return out;
 }
 

@@ -1,15 +1,18 @@
 // Shared avatar generation (browser + Node). Deterministic PRNG seed, SVG/TXT
 // export, and a <canvas>-based PNG for the web. The Node CLI (cli.mjs) imports
 // generate/toSVG/toTXT from here and adds a zlib PNG encoder of its own.
-import { PALETTE, TEMPLATES } from './data.js';
+import { PALETTE, TEMPLATES as CURATED } from './data.js';
+import { SPRITES } from './sprites.js';
 
 export const SIZE = 8;
+// Every template is just a grid of "ink" chars (any non-"." char) plus transparent.
+// Each distinct ink char is one color slot; generate() recolors all slots randomly
+// per seed, so both hand-made and imported sprites get full color variety.
+export const TEMPLATES = { ...CURATED, ...SPRITES };
 export const TEMPLATE_NAMES = Object.keys(TEMPLATES);
 
-const C = Object.fromEntries(PALETTE.filter((p) => p.hex).map((p) => [p.name, p.hex]));
-const DARK = C.dark;
-const LIGHT = C.light;
-const VIVID = ['blue', 'red', 'yellow', 'orange', 'green', 'pink', 'brown'];
+// All paintable palette colors (hex) — the pool we draw recolors from.
+const PALETTE_HEXES = PALETTE.filter((p) => p.hex).map((p) => p.hex);
 
 const VALUE_BY_HEX = Object.fromEntries(
   PALETTE.filter((p) => p.hex).map((p) => [p.hex, String(p.value)])
@@ -41,20 +44,40 @@ function byteStream(seed) {
   };
 }
 
-/** Build the illustration model for a seed: template + colors + hex grid. */
+// Deterministic Fisher-Yates using the seeded byte stream.
+function shuffle(arr, next) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = next() % (i + 1);
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+/**
+ * Build the illustration model for a seed. Finds every distinct ink char in the
+ * template (its color slots) and assigns each a distinct palette color, drawn
+ * without replacement from a per-seed shuffle — so a K-color sprite has up to
+ * 10·9·…·(11-K) combinations, not just two.
+ */
 export function generate(seed, templateName) {
   const next = byteStream(seed);
   const name = templateName || TEMPLATE_NAMES[next() % TEMPLATE_NAMES.length];
   const template = TEMPLATES[name];
 
-  const body = VIVID[next() % VIVID.length];
-  let accent = VIVID[next() % VIVID.length];
-  if (accent === body) accent = VIVID[(VIVID.indexOf(body) + 3) % VIVID.length];
+  // Distinct ink chars, in first-appearance order.
+  const slots = [];
+  for (const row of template) {
+    for (const ch of row) if (ch !== '.' && !slots.includes(ch)) slots.push(ch);
+  }
 
-  const roleColor = { '.': null, B: C[body], A: C[accent], E: DARK, W: LIGHT, M: DARK };
-  const grid = template.map((row) => [...row].map((ch) => roleColor[ch] ?? null));
+  // Assign each slot a color from a shuffled palette (distinct while slots ≤ palette).
+  const pool = shuffle(PALETTE_HEXES.slice(), next);
+  const colorByChar = {};
+  slots.forEach((ch, i) => { colorByChar[ch] = pool[i % pool.length]; });
 
-  return { seed: String(seed), name, body, accent, grid };
+  const grid = template.map((row) => [...row].map((ch) => (ch === '.' ? null : colorByChar[ch])));
+
+  return { seed: String(seed), name, colors: slots.map((s) => colorByChar[s]), grid };
 }
 
 /** SVG string (transparent background, crisp pixels). */

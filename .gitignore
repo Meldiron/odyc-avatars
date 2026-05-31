@@ -29,6 +29,10 @@ pnpm-debug.log*
 # Generated CLI avatars (regenerate with: npm run avatars -- --batch 100 avatars/ --format all)
 avatars/
 
+# Downloaded source spritesheets for the importer (src/lib/sprites.js is the
+# committed output; re-download per the URLs in scripts/import-sprites.mjs)
+.import/
+
 # Editor / IDE
 .vscode/*
 !.vscode/extensions.json

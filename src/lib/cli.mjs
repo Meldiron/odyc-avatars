@@ -13,8 +13,7 @@
 import zlib from 'node:zlib';
 import fs from 'node:fs';
 import path from 'node:path';
-import { SIZE, TEMPLATE_NAMES, generate, toSVG, toTXT } from './avatar.js';
-import { TEMPLATES } from './data.js';
+import { SIZE, TEMPLATE_NAMES, TEMPLATES, generate, toSVG, toTXT } from './avatar.js';
 
 // --- Minimal dependency-free PNG encoder (RGBA, via Node's zlib) ---
 function crc32(buf) {
@@ -169,7 +168,7 @@ function main() {
   const model = generate(input);
   writeOutputs(model, base, formats);
 
-  console.log(`Wrote ${path.basename(base)}.{${formats.join(',')}}  (${model.name}: ${model.body}/${model.accent})`);
+  console.log(`Wrote ${path.basename(base)}.{${formats.join(',')}}  (${model.name}, ${model.colors.length} colors)`);
   if (preview) process.stdout.write('\n' + toTerminal(model) + '\n');
 }
 

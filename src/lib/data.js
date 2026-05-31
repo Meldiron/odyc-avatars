@@ -1,8 +1,9 @@
 // Source of truth for odyc-avatars: the color palette and the 131 8x8 sprite
 // templates. Edit here — consumed by avatar.js (web) and cli.mjs (Node CLI).
 //
-// Template role chars: '.' transparent · B body · A accent · E eye (dark)
-//                      W white/highlight · M mouth/detail (dark)
+// Each char is a distinct COLOR SLOT (recolored randomly per seed); '.' = transparent.
+// The letters just mark separate regions: B body · A accent · E eyes · W highlight
+// · M detail. (Imported sprites in sprites.js use digit chars 0-9 the same way.)
 export const PALETTE = [
   {
     "value": ".",
