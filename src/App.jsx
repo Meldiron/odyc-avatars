@@ -80,7 +80,7 @@ export default function App() {
           <div className="hero__text">
             <h1>Odyc.js Avatars Gallery</h1>
             <p>
-              A never-ending parade of tiny heroes for Odyc.js profile. Keep scrolling, grab one you like, and level-up your Odyc.js avatar.
+              A never-ending parade of tiny heroes for your Odyc.js avatar. Keep scrolling, grab one you like, and level-up your Odyc.js profile.
             </p>
           </div>
           {applied && (
