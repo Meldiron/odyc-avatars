@@ -38,6 +38,8 @@ export default function App() {
   const [pinned, setPinned] = useState(false);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [applyingSeed, setApplyingSeed] = useState(null);
+  const [signingIn, setSigningIn] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const userMenuRef = useRef(null);
@@ -117,8 +119,10 @@ export default function App() {
         return;
       }
 
+      setApplyingSeed(model.seed);
       const token = await getOidcAccessToken();
       if (!token) {
+        setApplyingSeed(null);
         showToast('Could not get access token. Please sign in again.');
         return;
       }
@@ -130,10 +134,18 @@ export default function App() {
         showToast(`Applied "${model.name}" as your avatar`);
       } catch {
         showToast('Failed to save avatar. Please try again.');
+      } finally {
+        setApplyingSeed(null);
       }
     },
     [user, showToast]
   );
+
+  const handleSignIn = useCallback(() => {
+    setSigningIn(true);
+    showToast('Redirecting to Odyc.js…');
+    signInWithOdyc();
+  }, [showToast]);
 
   const applied = serverAvatar ? parseAvatarString(serverAvatar) : null;
 
@@ -201,9 +213,18 @@ export default function App() {
                 )}
               </div>
             ) : (
-              <button className="btn-signin" onClick={signInWithOdyc}>
-                <img className="btn-signin__logo" src="/odyc-logo.png" alt="" />
-                Sign in with Odyc.js
+              <button className="btn-signin" onClick={handleSignIn} disabled={signingIn}>
+                {signingIn ? (
+                  <>
+                    <span className="btn-signin__spinner" />
+                    Redirecting…
+                  </>
+                ) : (
+                  <>
+                    <img className="btn-signin__logo" src="/odyc-logo.png" alt="" />
+                    Sign in with Odyc.js
+                  </>
+                )}
               </button>
             )}
           </div>
@@ -234,6 +255,7 @@ export default function App() {
               key={m.seed}
               model={m}
               applied={isSameAvatar(m, serverAvatar)}
+              applying={applyingSeed === m.seed}
               onApply={handleApply}
               onToast={showToast}
             />
@@ -269,13 +291,20 @@ export default function App() {
               </p>
               <button
                 className="modal__action"
-                onClick={() => {
-                  setAuthModalOpen(false);
-                  signInWithOdyc();
-                }}
+                onClick={handleSignIn}
+                disabled={signingIn}
               >
-                <img src="/odyc-logo.png" alt="" />
-                Sign in with Odyc.js
+                {signingIn ? (
+                  <>
+                    <span className="modal__action__spinner" />
+                    Redirecting…
+                  </>
+                ) : (
+                  <>
+                    <img src="/odyc-logo.png" alt="" />
+                    Sign in with Odyc.js
+                  </>
+                )}
               </button>
             </div>
           </div>

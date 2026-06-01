@@ -95,9 +95,18 @@ button { font: inherit; cursor: pointer; }
   transition: background 0.15s ease, border-color 0.15s ease;
 }
 .btn-signin:hover { background: var(--panel-2); border-color: #34343f; }
+.btn-signin:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
 .btn-signin__logo {
   width: 20px; height: 20px; border-radius: 5px;
   image-rendering: pixelated;
+}
+.btn-signin__spinner {
+  width: 14px; height: 14px; border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.25); border-top-color: var(--text);
+  animation: spin 0.8s linear infinite;
 }
 
 /* ---------- main ---------- */
@@ -202,14 +211,25 @@ button { font: inherit; cursor: pointer; }
 
 .apply {
   margin-left: auto; flex: 1;
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
   border: none; border-radius: 999px;
   background: var(--blue); color: #fff;
   font-weight: 700; font-size: 14px; padding: 9px 14px;
-  transition: background 0.15s ease;
+  transition: background 0.15s ease, opacity 0.15s ease;
 }
 .apply:hover { background: var(--blue-hi); }
 .apply:active { background: var(--blue-press); }
+.apply:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
 .card--applied .apply { background: var(--panel-2); color: var(--blue-hi); }
+
+.apply__spinner {
+  width: 14px; height: 14px; border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.35); border-top-color: #fff;
+  animation: spin 0.8s linear infinite;
+}
 
 /* ---------- sentinel / toast ---------- */
 .sentinel {
@@ -293,9 +313,18 @@ button { font: inherit; cursor: pointer; }
 }
 .modal__action:hover { background: var(--panel-2); border-color: #34343f; }
 .modal__action:active { background: var(--stage); }
+.modal__action:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
 .modal__action img {
   width: 22px; height: 22px; border-radius: 6px;
   image-rendering: pixelated;
+}
+.modal__action__spinner {
+  width: 16px; height: 16px; border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.25); border-top-color: var(--text);
+  animation: spin 0.8s linear infinite;
 }
 
 /* ---------- user menu ---------- */

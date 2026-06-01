@@ -24,7 +24,7 @@ function downloadBlob(filename, blob) {
   URL.revokeObjectURL(url);
 }
 
-function AvatarCard({ model, applied, onApply, onToast }) {
+function AvatarCard({ model, applied, applying, onApply, onToast }) {
   const base = `odyc-avatar-${model.seed}`;
   const [open, setOpen] = useState(false);
   const menuRef = useRef(null);
@@ -87,8 +87,21 @@ function AvatarCard({ model, applied, onApply, onToast }) {
             </div>
           )}
         </div>
-        <button className="apply" onClick={() => onApply(model)}>
-          {applied ? 'Applied' : 'Apply'}
+        <button
+          className="apply"
+          onClick={() => onApply(model)}
+          disabled={applying}
+        >
+          {applying ? (
+            <>
+              <span className="apply__spinner" />
+              Applying…
+            </>
+          ) : applied ? (
+            'Applied'
+          ) : (
+            'Apply'
+          )}
         </button>
       </div>
     </article>
