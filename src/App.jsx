@@ -1,12 +1,19 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { generate } from './lib/avatar.js';
-import { getAccount, handleOAuthCallback, signInWithOdyc, signOut } from './lib/appwrite.js';
+import { generate, toTXT, parseAvatarString } from './lib/avatar.js';
+import {
+  getAccount,
+  handleOAuthCallback,
+  signInWithOdyc,
+  signOut,
+  getOidcAccessToken,
+  fetchRemoteAvatar,
+  updateRemoteAvatar,
+} from './lib/appwrite.js';
 import AvatarCard from './components/AvatarCard.jsx';
 import AvatarPixels from './components/AvatarPixels.jsx';
 import Logo from './components/Logo.jsx';
 
 const PAGE = 24;
-const APPLIED_KEY = 'odyc.appliedSeed';
 
 // New seed prefix every page load (current time) so each reload yields a fresh
 // infinite list. Seeds are still deterministic strings, so an applied avatar
@@ -19,9 +26,14 @@ function buildModels(from, count) {
   return out;
 }
 
+function isSameAvatar(model, serverAvatar) {
+  if (!serverAvatar) return false;
+  return toTXT(model).trim() === serverAvatar.trim();
+}
+
 export default function App() {
   const [models, setModels] = useState(() => buildModels(0, PAGE));
-  const [appliedSeed, setAppliedSeed] = useState(() => localStorage.getItem(APPLIED_KEY));
+  const [serverAvatar, setServerAvatar] = useState(null);
   const [toast, setToast] = useState(null);
   const [pinned, setPinned] = useState(false);
   const [user, setUser] = useState(null);
@@ -32,11 +44,24 @@ export default function App() {
   const appliedRef = useRef(null);
   const toastTimer = useRef(null);
 
-  // Handle OAuth callback and check login state on mount.
+  // Handle OAuth callback and fetch user + avatar on mount.
   useEffect(() => {
     (async () => {
       await handleOAuthCallback();
-      getAccount().then(setUser).catch(() => setUser(null));
+      const account = await getAccount();
+      setUser(account);
+
+      if (account) {
+        try {
+          const token = await getOidcAccessToken();
+          if (token) {
+            const avatar = await fetchRemoteAvatar(token);
+            setServerAvatar(avatar);
+          }
+        } catch {
+          // ignore fetch errors
+        }
+      }
     })();
   }, []);
 
@@ -84,20 +109,31 @@ export default function App() {
   }, []);
 
   const handleApply = useCallback(
-    (model) => {
+    async (model) => {
       if (!user) {
         setAuthModalOpen(true);
         return;
       }
-      setAppliedSeed(model.seed);
-      localStorage.setItem(APPLIED_KEY, model.seed);
-      showToast(`Applied "${model.name}" as your avatar`);
+
+      const token = await getOidcAccessToken();
+      if (!token) {
+        showToast('Could not get access token. Please sign in again.');
+        return;
+      }
+
+      const avatarString = toTXT(model).trim();
+      try {
+        await updateRemoteAvatar(token, avatarString);
+        setServerAvatar(avatarString);
+        showToast(`Applied "${model.name}" as your avatar`);
+      } catch {
+        showToast('Failed to save avatar. Please try again.');
+      }
     },
     [user, showToast]
   );
 
-  // appliedSeed is the model.seed (e.g. "odyc-12"); generate() reproduces it exactly.
-  const applied = appliedSeed ? generate(appliedSeed) : null;
+  const applied = serverAvatar ? parseAvatarString(serverAvatar) : null;
 
   // Show the floating copy only once the inline card scrolls under the header.
   useEffect(() => {
@@ -108,7 +144,7 @@ export default function App() {
     });
     io.observe(el);
     return () => io.disconnect();
-  }, [appliedSeed]);
+  }, [serverAvatar]);
 
   const appliedCard = (className, ref) => (
     <aside className={className} ref={ref}>
@@ -152,6 +188,7 @@ export default function App() {
                         setUserMenuOpen(false);
                         await signOut();
                         setUser(null);
+                        setServerAvatar(null);
                       }}
                     >
                       Sign out
@@ -185,7 +222,7 @@ export default function App() {
             <AvatarCard
               key={m.seed}
               model={m}
-              applied={appliedSeed === m.seed}
+              applied={isSameAvatar(m, serverAvatar)}
               onApply={handleApply}
               onToast={showToast}
             />
