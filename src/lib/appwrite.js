@@ -42,6 +42,17 @@ export async function handleOAuthCallback() {
 }
 
 /**
+ * Sign out the current user by deleting the active session.
+ */
+export async function signOut() {
+  try {
+    await account.deleteSession('current');
+  } catch {
+    // ignore
+  }
+}
+
+/**
  * Start "Sign in with Odyc.js" OAuth2 flow via Appwrite using the OIDC provider.
  * Redirects the browser to the identity provider.
  */

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { generate } from './lib/avatar.js';
-import { getAccount, handleOAuthCallback, signInWithOdyc } from './lib/appwrite.js';
+import { getAccount, handleOAuthCallback, signInWithOdyc, signOut } from './lib/appwrite.js';
 import AvatarCard from './components/AvatarCard.jsx';
 import AvatarPixels from './components/AvatarPixels.jsx';
 import Logo from './components/Logo.jsx';
@@ -26,6 +26,8 @@ export default function App() {
   const [pinned, setPinned] = useState(false);
   const [user, setUser] = useState(null);
   const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const userMenuRef = useRef(null);
   const sentinelRef = useRef(null);
   const appliedRef = useRef(null);
   const toastTimer = useRef(null);
@@ -45,6 +47,19 @@ export default function App() {
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
   }, [authModalOpen]);
+
+  // Close user menu on outside click or Escape.
+  useEffect(() => {
+    if (!userMenuOpen) return;
+    const onDown = (e) => userMenuRef.current && !userMenuRef.current.contains(e.target) && setUserMenuOpen(false);
+    const onKey = (e) => e.key === 'Escape' && setUserMenuOpen(false);
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [userMenuOpen]);
 
   const loadMore = useCallback(() => {
     setModels((prev) => [...prev, ...buildModels(prev.length, PAGE)]);
@@ -116,10 +131,40 @@ export default function App() {
             <a className="active" href="#">Gallery</a>
           </nav>
           <div className="nav__right">
-            <button className="btn-signin" onClick={signInWithOdyc}>
-              <img className="btn-signin__logo" src="/odyc-logo.png" alt="" />
-              Sign in with Odyc.js
-            </button>
+            {user ? (
+              <div className="user-menu" ref={userMenuRef}>
+                <button
+                  className="user-menu__trigger"
+                  onClick={() => setUserMenuOpen((o) => !o)}
+                  aria-haspopup="menu"
+                  aria-expanded={userMenuOpen}
+                >
+                  <span className="user-menu__name">{user.name || user.email}</span>
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
+                </button>
+                {userMenuOpen && (
+                  <div className="user-menu__dropdown" role="menu">
+                    <button
+                      role="menuitem"
+                      onClick={async () => {
+                        setUserMenuOpen(false);
+                        await signOut();
+                        setUser(null);
+                      }}
+                    >
+                      Sign out
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <button className="btn-signin" onClick={signInWithOdyc}>
+                <img className="btn-signin__logo" src="/odyc-logo.png" alt="" />
+                Sign in with Odyc.js
+              </button>
+            )}
           </div>
         </div>
       </header>
