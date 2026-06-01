@@ -11,6 +11,11 @@ export const SIZE = 8;
 export const TEMPLATES = { ...CURATED, ...SPRITES };
 export const TEMPLATE_NAMES = Object.keys(TEMPLATES);
 
+// Map palette value chars (0–9) back to hex for parsing remote avatars.
+export const HEX_BY_VALUE = Object.fromEntries(
+  PALETTE.filter((p) => p.hex).map((p) => [String(p.value), p.hex])
+);
+
 // All paintable palette colors (hex) — the pool we draw recolors from.
 const PALETTE_HEXES = PALETTE.filter((p) => p.hex).map((p) => p.hex);
 
@@ -130,4 +135,16 @@ export function toPNGBlob(model, scale = 32) {
   const canvas = document.createElement('canvas');
   drawToCanvas(canvas, model, scale);
   return new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+}
+
+/**
+ * Parse an Odyc.js API avatar string (newline-separated grid of palette
+ * values / '.') into a model object that AvatarPixels can render.
+ */
+export function parseAvatarString(str) {
+  const rows = str.trim().split('\n');
+  const grid = rows.map((row) =>
+    [...row].map((ch) => (ch === '.' ? null : HEX_BY_VALUE[ch] || null))
+  );
+  return { name: 'Your avatar', grid };
 }
