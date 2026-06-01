@@ -37,6 +37,7 @@ export default function App() {
   const [toast, setToast] = useState(null);
   const [pinned, setPinned] = useState(false);
   const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const userMenuRef = useRef(null);
@@ -62,6 +63,7 @@ export default function App() {
           // ignore fetch errors
         }
       }
+      setLoading(false);
     })();
   }, []);
 
@@ -167,7 +169,9 @@ export default function App() {
             <a className="active" href="#">Gallery</a>
           </nav>
           <div className="nav__right">
-            {user ? (
+            {loading ? (
+              <div className="skeleton skeleton--nav" />
+            ) : user ? (
               <div className="user-menu" ref={userMenuRef}>
                 <button
                   className="user-menu__trigger"
@@ -214,7 +218,14 @@ export default function App() {
               A never-ending parade of tiny heroes for your Odyc.js avatar. Keep scrolling, grab one you like, and level-up your Odyc.js profile.
             </p>
           </div>
-          {user && applied && appliedCard('hero__applied', appliedRef)}
+          {loading ? (
+            <aside className="hero__applied hero__applied--skeleton">
+              <div className="skeleton skeleton--label" />
+              <div className="skeleton skeleton--avatar" />
+            </aside>
+          ) : (
+            user && applied && appliedCard('hero__applied', appliedRef)
+          )}
         </section>
 
         <section className="grid">
