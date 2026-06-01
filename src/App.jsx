@@ -22,7 +22,9 @@ export default function App() {
   const [models, setModels] = useState(() => buildModels(0, PAGE));
   const [appliedSeed, setAppliedSeed] = useState(() => localStorage.getItem(APPLIED_KEY));
   const [toast, setToast] = useState(null);
+  const [pinned, setPinned] = useState(false);
   const sentinelRef = useRef(null);
+  const appliedRef = useRef(null);
   const toastTimer = useRef(null);
 
   const loadMore = useCallback(() => {
@@ -59,6 +61,26 @@ export default function App() {
   // appliedSeed is the model.seed (e.g. "odyc-12"); generate() reproduces it exactly.
   const applied = appliedSeed ? generate(appliedSeed) : null;
 
+  // Show the floating copy only once the inline card scrolls under the header.
+  useEffect(() => {
+    const el = appliedRef.current;
+    if (!el) { setPinned(false); return; }
+    const io = new IntersectionObserver(([e]) => setPinned(!e.isIntersecting), {
+      rootMargin: '-80px 0px 0px 0px', // header height
+    });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [appliedSeed]);
+
+  const appliedCard = (className, ref) => (
+    <aside className={className} ref={ref}>
+      <span className="hero__appliedLabel">Current avatar</span>
+      <div className="hero__appliedArt">
+        <AvatarPixels model={applied} className="card__art" />
+      </div>
+    </aside>
+  );
+
   return (
     <div className="app">
       <header className="nav">
@@ -87,17 +109,7 @@ export default function App() {
               A never-ending parade of tiny heroes for your Odyc.js avatar. Keep scrolling, grab one you like, and level-up your Odyc.js profile.
             </p>
           </div>
-          {applied && (
-            <div className="hero__applied">
-              <div className="hero__appliedArt">
-                <AvatarPixels model={applied} className="card__art" />
-              </div>
-              <div>
-                <span className="hero__appliedLabel">Your avatar</span>
-                <span className="hero__appliedName">{applied.name}</span>
-              </div>
-            </div>
-          )}
+          {applied && appliedCard('hero__applied', appliedRef)}
         </section>
 
         <section className="grid">
@@ -116,6 +128,8 @@ export default function App() {
           <span className="spinner" /> loading more…
         </div>
       </main>
+
+      {applied && pinned && appliedCard('hero__applied hero__applied--float')}
 
       <div className={`toast${toast ? ' toast--show' : ''}`}>{toast}</div>
     </div>
