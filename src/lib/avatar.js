@@ -16,8 +16,11 @@ export const HEX_BY_VALUE = Object.fromEntries(
   PALETTE.filter((p) => p.hex).map((p) => [String(p.value), p.hex])
 );
 
+const WHITE_HEX = '#f8f9fa';
+
 // All paintable palette colors (hex) — the pool we draw recolors from.
-const PALETTE_HEXES = PALETTE.filter((p) => p.hex).map((p) => p.hex);
+// White is reserved for background / empty pixels and never randomly assigned.
+const PALETTE_HEXES = PALETTE.filter((p) => p.hex && p.hex !== WHITE_HEX).map((p) => p.hex);
 
 const VALUE_BY_HEX = Object.fromEntries(
   PALETTE.filter((p) => p.hex).map((p) => [p.hex, String(p.value)])
@@ -85,14 +88,13 @@ export function generate(seed, templateName) {
   return { seed: String(seed), name, colors: slots.map((s) => colorByChar[s]), grid };
 }
 
-/** SVG string (transparent background, crisp pixels). */
+/** SVG string (white background, crisp pixels). */
 export function toSVG({ grid }, { scale = 32 } = {}) {
   const dim = SIZE * scale;
   const rects = [];
   for (let y = 0; y < SIZE; y++) {
     for (let x = 0; x < SIZE; x++) {
-      const hex = grid[y][x];
-      if (!hex) continue;
+      const hex = grid[y][x] || WHITE_HEX;
       rects.push(
         `<rect x="${x * scale}" y="${y * scale}" width="${scale}" height="${scale}" fill="${hex}"/>`
       );
@@ -119,12 +121,10 @@ export function drawToCanvas(canvas, { grid }, scale = 32) {
   canvas.width = dim;
   canvas.height = dim;
   const ctx = canvas.getContext('2d');
-  ctx.clearRect(0, 0, dim, dim);
   for (let y = 0; y < SIZE; y++) {
     for (let x = 0; x < SIZE; x++) {
       const hex = grid[y][x];
-      if (!hex) continue;
-      ctx.fillStyle = hex;
+      ctx.fillStyle = hex || WHITE_HEX;
       ctx.fillRect(x * scale, y * scale, scale, scale);
     }
   }
