@@ -19,6 +19,29 @@ export async function getAccount() {
 }
 
 /**
+ * Handle OAuth2 callback: read secret/userId from URL, create a session,
+ * then strip the query params so the URL stays clean.
+ * Returns the new session or null if no callback params were present.
+ */
+export async function handleOAuthCallback() {
+  const url = new URL(window.location.href);
+  const secret = url.searchParams.get('secret');
+  const userId = url.searchParams.get('userId');
+
+  if (!secret || !userId) return null;
+
+  try {
+    const session = await account.createSession(userId, secret);
+    url.searchParams.delete('secret');
+    url.searchParams.delete('userId');
+    window.history.replaceState({}, '', url.toString());
+    return session;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Start "Sign in with Odyc.js" OAuth2 flow via Appwrite using the OIDC provider.
  * Redirects the browser to the identity provider.
  */

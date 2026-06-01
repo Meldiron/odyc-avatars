@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { generate } from './lib/avatar.js';
-import { getAccount, signInWithOdyc } from './lib/appwrite.js';
+import { getAccount, handleOAuthCallback, signInWithOdyc } from './lib/appwrite.js';
 import AvatarCard from './components/AvatarCard.jsx';
 import AvatarPixels from './components/AvatarPixels.jsx';
 import Logo from './components/Logo.jsx';
@@ -30,9 +30,12 @@ export default function App() {
   const appliedRef = useRef(null);
   const toastTimer = useRef(null);
 
-  // Check login state on mount.
+  // Handle OAuth callback and check login state on mount.
   useEffect(() => {
-    getAccount().then(setUser).catch(() => setUser(null));
+    (async () => {
+      await handleOAuthCallback();
+      getAccount().then(setUser).catch(() => setUser(null));
+    })();
   }, []);
 
   // Close modal on Escape.
