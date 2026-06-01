@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { generate } from './lib/avatar.js';
+import { getAccount, signInWithOdyc } from './lib/appwrite.js';
 import AvatarCard from './components/AvatarCard.jsx';
 import AvatarPixels from './components/AvatarPixels.jsx';
 import Logo from './components/Logo.jsx';
@@ -23,9 +24,24 @@ export default function App() {
   const [appliedSeed, setAppliedSeed] = useState(() => localStorage.getItem(APPLIED_KEY));
   const [toast, setToast] = useState(null);
   const [pinned, setPinned] = useState(false);
+  const [user, setUser] = useState(null);
+  const [authModalOpen, setAuthModalOpen] = useState(false);
   const sentinelRef = useRef(null);
   const appliedRef = useRef(null);
   const toastTimer = useRef(null);
+
+  // Check login state on mount.
+  useEffect(() => {
+    getAccount().then(setUser).catch(() => setUser(null));
+  }, []);
+
+  // Close modal on Escape.
+  useEffect(() => {
+    if (!authModalOpen) return;
+    const onKey = (e) => e.key === 'Escape' && setAuthModalOpen(false);
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [authModalOpen]);
 
   const loadMore = useCallback(() => {
     setModels((prev) => [...prev, ...buildModels(prev.length, PAGE)]);
@@ -51,11 +67,15 @@ export default function App() {
 
   const handleApply = useCallback(
     (model) => {
+      if (!user) {
+        setAuthModalOpen(true);
+        return;
+      }
       setAppliedSeed(model.seed);
       localStorage.setItem(APPLIED_KEY, model.seed);
-      showToast(`Applied “${model.name}” as your avatar`);
+      showToast(`Applied "${model.name}" as your avatar`);
     },
-    [showToast]
+    [user, showToast]
   );
 
   // appliedSeed is the model.seed (e.g. "odyc-12"); generate() reproduces it exactly.
@@ -93,7 +113,7 @@ export default function App() {
             <a className="active" href="#">Gallery</a>
           </nav>
           <div className="nav__right">
-            <button className="btn-signin">
+            <button className="btn-signin" onClick={signInWithOdyc}>
               <img className="btn-signin__logo" src="/odyc-logo.png" alt="" />
               Sign in with Odyc.js
             </button>
@@ -109,7 +129,7 @@ export default function App() {
               A never-ending parade of tiny heroes for your Odyc.js avatar. Keep scrolling, grab one you like, and level-up your Odyc.js profile.
             </p>
           </div>
-          {applied && appliedCard('hero__applied', appliedRef)}
+          {user && applied && appliedCard('hero__applied', appliedRef)}
         </section>
 
         <section className="grid">
@@ -129,9 +149,42 @@ export default function App() {
         </div>
       </main>
 
-      {applied && pinned && appliedCard('hero__applied hero__applied--float')}
+      {user && applied && pinned && appliedCard('hero__applied hero__applied--float')}
 
       <div className={`toast${toast ? ' toast--show' : ''}`}>{toast}</div>
+
+      {authModalOpen && (
+        <div className="modal-backdrop" onClick={() => setAuthModalOpen(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal__body">
+              <button
+                className="modal__close"
+                onClick={() => setAuthModalOpen(false)}
+                aria-label="Close"
+              >
+                ×
+              </button>
+              <div className="modal__logo">
+                <Logo size={48} radius={12} />
+              </div>
+              <h2 className="modal__title">Sign in</h2>
+              <p className="modal__desc">
+                Save your avatar to your Odyc.js profile and keep it synced across devices.
+              </p>
+              <button
+                className="modal__action"
+                onClick={() => {
+                  setAuthModalOpen(false);
+                  signInWithOdyc();
+                }}
+              >
+                <img src="/odyc-logo.png" alt="" />
+                Sign in with Odyc.js
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
