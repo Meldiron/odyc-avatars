@@ -3,6 +3,7 @@ import { generate, toTXT, parseAvatarString } from './lib/avatar.js';
 import {
   getAccount,
   handleOAuthCallback,
+  readOAuthError,
   signInWithOdyc,
   signOut,
   getOidcAccessToken,
@@ -41,6 +42,7 @@ export default function App() {
   const [applyingSeed, setApplyingSeed] = useState(null);
   const [signingIn, setSigningIn] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [errorModalOpen, setErrorModalOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const userMenuRef = useRef(null);
   const sentinelRef = useRef(null);
@@ -50,6 +52,7 @@ export default function App() {
   // Handle OAuth callback and fetch user + avatar on mount.
   useEffect(() => {
     (async () => {
+      if (readOAuthError()) setErrorModalOpen(true);
       await handleOAuthCallback();
       const account = await getAccount();
       setUser(account);
@@ -69,13 +72,17 @@ export default function App() {
     })();
   }, []);
 
-  // Close modal on Escape.
+  // Close modals on Escape.
   useEffect(() => {
-    if (!authModalOpen) return;
-    const onKey = (e) => e.key === 'Escape' && setAuthModalOpen(false);
+    if (!authModalOpen && !errorModalOpen) return;
+    const onKey = (e) => {
+      if (e.key !== 'Escape') return;
+      setAuthModalOpen(false);
+      setErrorModalOpen(false);
+    };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  }, [authModalOpen]);
+  }, [authModalOpen, errorModalOpen]);
 
   // Close user menu on outside click or Escape.
   useEffect(() => {
@@ -305,6 +312,34 @@ export default function App() {
                     Sign in with Odyc.js
                   </>
                 )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {errorModalOpen && (
+        <div className="modal-backdrop" onClick={() => setErrorModalOpen(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal__body">
+              <button
+                className="modal__close"
+                onClick={() => setErrorModalOpen(false)}
+                aria-label="Close"
+              >
+                ×
+              </button>
+              <div className="modal__logo">
+                <Logo size={48} radius={12} />
+              </div>
+              <h2 className="modal__title">Can't sign in</h2>
+              <p className="modal__desc">
+                Guest accounts can't use external sign-ins because they don't have
+                an email address. Please use an account with an email address to
+                continue.
+              </p>
+              <button className="modal__action" onClick={() => setErrorModalOpen(false)}>
+                Got it
               </button>
             </div>
           </div>

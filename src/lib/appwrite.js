@@ -44,6 +44,20 @@ export async function handleOAuthCallback() {
 }
 
 /**
+ * Read an OAuth2 error returned in the URL (e.g. ?error=...) and strip it from
+ * the address bar. Returns true if an error param was present, false otherwise.
+ * We intentionally don't surface the raw provider message — see App.jsx.
+ */
+export function readOAuthError() {
+  const url = new URL(window.location.href);
+  if (!url.searchParams.has('error')) return false;
+
+  url.searchParams.delete('error');
+  window.history.replaceState({}, '', url.toString());
+  return true;
+}
+
+/**
  * Sign out the current user by deleting the active session.
  */
 export async function signOut() {
